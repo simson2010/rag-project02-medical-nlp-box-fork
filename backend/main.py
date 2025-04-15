@@ -27,7 +27,7 @@ app.add_middleware(
 
 # 初始化各个服务
 ner_service = NERService()  # 命名实体识别服务
-standardization_service = StdService()  # 术语标准化服务
+# standardization_service = StdService()  # 术语标准化服务
 abbr_service = AbbrService()  # 缩写扩展服务
 gen_service = GenService()  # 文本生成服务
 corr_service = CorrService()  # 拼写纠正服务
@@ -160,9 +160,12 @@ class GenInput(BaseInputModel):
         description="生成方法"
     )
 
+standardization_service = None 
 # API 端点：术语标准化
 @app.post("/api/std")
 async def standardization(input: TextInput):
+    global standardization_service
+    print("processing :api:std")
     try:
         # 记录请求信息
         logger.info(f"Received request: text={input.text}, options={input.options}, embeddingOptions={input.embeddingOptions}")
@@ -175,12 +178,13 @@ async def standardization(input: TextInput):
         ner_results = ner_service.process(input.text, input.options, term_types)
 
         # 初始化标准化服务
-        standardization_service = StdService(
-            provider=input.embeddingOptions.provider,
-            model=input.embeddingOptions.model,
-            db_path=f"db/{input.embeddingOptions.dbName}.db",
-            collection_name=input.embeddingOptions.collectionName
-        )
+        if standardization_service is None:
+            standardization_service = StdService(
+                provider=input.embeddingOptions.provider,
+                model=input.embeddingOptions.model,
+                db_path=f"db/{input.embeddingOptions.dbName}.db",
+                collection_name=input.embeddingOptions.collectionName
+            )
 
         # 获取识别到的实体
         entities = ner_results.get('entities', [])
